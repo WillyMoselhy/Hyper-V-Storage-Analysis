@@ -167,8 +167,8 @@
     while ($PendingParent){
         $Disks += foreach($Disk in $PendingParent){
         $Parent = $Disk.Parent
-        $CSV = $CSVs | ?{$_.CSVID -eq $Disk.CSVID}
-        $VirtualDisk = $VM.VirtualDisks | ?{$_.VirtualHardDiskID -eq $Disk.ID}
+        $CSV = $CSVs | Where-Object{$_.CSVID -eq $Disk.CSVID}
+        $VirtualDisk = $VM.VirtualDisks | Where-Object{$_.VirtualHardDiskID -eq $Disk.ID}
         if ($VirtualDisk) {
             if ( $VirtualDisk.VolumeType -eq "BootAndSystem" -and $CSV.Role -ne "Operating System"){
                 $DiskProblems +=    [PSCustomObject]@{
@@ -184,7 +184,7 @@
             }
             $VirtualDisk = $VirtualDisk.VolumeType
         }
-        $RelatedCP = $CheckPoints |?{$Parent.Location -in $_.HDDs.Path}
+        $RelatedCP = $CheckPoints |Where-Object{$Parent.Location -in $_.HDDs.Path}
         $Disk.ParentQueried = $true
         [PSCustomObject]@{
             HDDID       = $Parent.ID
@@ -271,10 +271,10 @@ $Files = foreach ($CSV in $CSVs){
         if($FileType -in @('.avhdx','.VHDX','.vhds','.mrt','.rct')){
             if($FileType -in @('.avhdx','.VHDX','.vhds')){
                 $CheckingFile = $File
-                $RelatedDisk = $Disks | ?{$_.NetworkPath -eq $CheckingFile.FullName} | select -First 1 #Do not support shared disks.
+                $RelatedDisk = $Disks | Where-Object{$_.NetworkPath -eq $CheckingFile.FullName} | Select-Object -First 1 #Do not support shared disks.
             }
             elseif ($FileType -in @('.mrt','.rct')){
-                $ParentFile = $CSVFiles | where {$_.FullName -eq "$($File.DirectoryName)\$($File.BaseName)"}
+                $ParentFile = $CSVFiles | Where-Object {$_.FullName -eq "$($File.DirectoryName)\$($File.BaseName)"}
                 if($ParentFile){
                     $CheckingFile = $ParentFile
                     $FileType = $CheckingFile.Extension
@@ -282,7 +282,7 @@ $Files = foreach ($CSV in $CSVs){
             }
 
 
-            $RelatedDisk = $Disks | ?{$_.NetworkPath -eq $CheckingFile.FullName} | select -First 1 #Do not support shared disks.
+            $RelatedDisk = $Disks | Where-Object{$_.NetworkPath -eq $CheckingFile.FullName} | Select-Object -First 1 #Do not support shared disks.
             if($RelatedDisk){
                 $RelatedVM = $RelatedDisk.RelatedVM
                 $RelatedCP = $RelatedDisk.RelatedCP
@@ -292,7 +292,7 @@ $Files = foreach ($CSV in $CSVs){
                     -and $CheckingFile.BaseName.Split("_")[-1] -match $GUIDPattern `
                     -and (Test-Path -Path "$($File.Directory)\$($CheckingFile.BaseName.Remove($CheckingFile.BaseName.Length-37)).vhds")
                   ){
-                $RelatedDisk = $Disks | ?{$_.NetworkPath -eq "$($CheckingFile.Directory)\$($CheckingFile.BaseName.Remove($CheckingFile.BaseName.Length-37)).vhds"} | select -First 1
+                $RelatedDisk = $Disks | Where-Object{$_.NetworkPath -eq "$($CheckingFile.Directory)\$($CheckingFile.BaseName.Remove($CheckingFile.BaseName.Length-37)).vhds"} | Select-Object -First 1
                 $RelatedVM = $RelatedDisk.RelatedVM
                 $RelatedCP = $RelatedDisk.RelatedCP
                 $RelatedDisk = $RelatedDisk.HDDID
@@ -339,28 +339,28 @@ $Files = foreach ($CSV in $CSVs){
                 if ($RelatedVM) {$RelatedVM = $RelatedVM.vmid}
             }
             # 'Virtual Machines' folder #
-            elseif ($LocalPath -in ($VMs.location | foreach {"$_\Virtual Machines"})){
-                $RelatedVM = $VMs | ?{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Virtual Machines" -eq $LocalPath)}
+            elseif ($LocalPath -in ($VMs.location | ForEach-Object {"$_\Virtual Machines"})){
+                $RelatedVM = $VMs | Where-Object{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Virtual Machines" -eq $LocalPath)}
                 if ($RelatedVM) {$RelatedVM = $RelatedVM.vmid}
             }
             # VM GUID Folder #
-            elseif($LocalPath -in ($VMs | foreach {"$($_.Location)\Virtual Machines\$($_.VMID)"})){
-                $RelatedVM = $VMs | ?{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Virtual Machines\$($_.VMID)" -eq $LocalPath)}
+            elseif($LocalPath -in ($VMs | ForEach-Object {"$($_.Location)\Virtual Machines\$($_.VMID)"})){
+                $RelatedVM = $VMs | Where-Object{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Virtual Machines\$($_.VMID)" -eq $LocalPath)}
                 if ($RelatedVM) {$RelatedVM = $RelatedVM.vmid}
             }
             # VM Checkpoints folder (snapshots)
-            elseif($LocalPath -in ($VMs | foreach {"$($_.CheckPointLocation)\Snapshots"})){
-                $RelatedVM = $VMs | ?{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.CheckPointLocation)\Snapshots" -eq $LocalPath)}
+            elseif($LocalPath -in ($VMs | ForEach-Object {"$($_.CheckPointLocation)\Snapshots"})){
+                $RelatedVM = $VMs | Where-Object{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.CheckPointLocation)\Snapshots" -eq $LocalPath)}
                 if ($RelatedVM) {$RelatedVM = $RelatedVM.vmid}
             }
             # VM 'UndoLog Configuration' folder
-            elseif($LocalPath -in ($VMs | foreach {"$($_.CheckPointLocation)\UndoLog Configuration"})){
-                $RelatedVM = $VMs | ?{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.CheckPointLocation)\UndoLog Configuration" -eq $LocalPath)}
+            elseif($LocalPath -in ($VMs | ForEach-Object {"$($_.CheckPointLocation)\UndoLog Configuration"})){
+                $RelatedVM = $VMs | Where-Object{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.CheckPointLocation)\UndoLog Configuration" -eq $LocalPath)}
                 if ($RelatedVM) {$RelatedVM = $RelatedVM.vmid}
             }
             # Checkpoint folder
-            elseif ($LocalPath -in ($CheckPoints | foreach {"$($_.Location)\Snapshots\$($_.CheckPointID)"})){
-                $RelatedCP = $CheckPoints | ?{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Snapshots\$($_.CheckPointID)" -eq $LocalPath)}
+            elseif ($LocalPath -in ($CheckPoints | ForEach-Object {"$($_.Location)\Snapshots\$($_.CheckPointID)"})){
+                $RelatedCP = $CheckPoints | Where-Object{$_.ClusterName -eq $CSV.ClusterName -and ("$($_.Location)\Snapshots\$($_.CheckPointID)" -eq $LocalPath)}
                 if ($RelatedCP) {
                     $RelatedVM = $RelatedCP.VMID
                     $RelatedCP = $RelatedCP.CheckPointID
@@ -398,15 +398,15 @@ $Files = foreach ($CSV in $CSVs){
 }
 
 #Find Orphan Folders that belong to VMs
-$FilesParents = $Files | Where-Object {$_.Type -ne "Folder" -and $_.RelatedVM -ne $null} | foreach {($_.LocalPath -split "\\")[0..(($disks[0].LocalPath -split "\\").Count-2)] -join "\"}
-$OrphanFolders = ($FileProblems | Where {$_.Issue -eq "Orphan"}).NetworkPath
+$FilesParents = $Files | Where-Object {$_.Type -ne "Folder" -and $_.RelatedVM -ne $null} | ForEach-Object {($_.LocalPath -split "\\")[0..(($disks[0].LocalPath -split "\\").Count-2)] -join "\"}
+$OrphanFolders = ($FileProblems | Where-Object {$_.Issue -eq "Orphan"}).NetworkPath
 $RelatedFolders = $Files | Where-Object {($_.Type -eq "Folder" -and $_.NetworkPath -in $OrphanFolders -and $_.LocalPath -in $FilesParents)}
 
-$FileProblems = $FileProblems | Where{$_.NetworkPath -notin $RelatedFolders.NetworkPath}
+$FileProblems = $FileProblems | Where-Object{$_.NetworkPath -notin $RelatedFolders.NetworkPath}
 
 #Find Disks without a match in Files
 $DiskProblems += foreach ($Disk in $Disks){
-    $MatchInFiles = $Files | ?{$_.RelatedDisk -eq $Disk.HDDID}
+    $MatchInFiles = $Files | Where-Object{$_.RelatedDisk -eq $Disk.HDDID}
     if(!($MatchInFiles)){
         [PSCustomObject]@{
             HDDID = $Disk.HDDID
