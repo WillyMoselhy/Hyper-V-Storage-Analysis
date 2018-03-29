@@ -1,5 +1,5 @@
 # Hyper-V Storage Analysis
-
+![alt text](https://github.com/WillyMoselhy/Hyper-V-Storage-Analysis/raw/master/Hyper-V%20Power%20BI.png "Sample Power BI report")
 First you download the script and Power BI template.
 
 Second, make sure you run the script on a workstation where the VMM and Hyper-V PowerShell modules are available. You should also have Power BI Desktop installed!
