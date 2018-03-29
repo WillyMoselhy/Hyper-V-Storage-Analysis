@@ -1,6 +1,6 @@
 #region: script parameters
     #VMM Server Name (or cluster name)
-    $VMMServerName = "SCVMM.Domain.Com"
+    $VMMServerName = "DCVMMHA"
 
     #CSV Roles, here you should define the naming convention of your CSVs
     $CSVRoles = @{
@@ -11,10 +11,12 @@
 #endregion: script parameters
 
 #region: Prepare Environment
+    $ErrorActionPreference = "Stop"
+    
     #Import Modules
     #The prefixes are to avoid issues with aliases.
     Import-Module -Name Hyper-V -Prefix HyperV
-    Import-Module -Name virtualmachinemanager -Prefix VMM
+    Import-Module -Name virtualmachinemanager -Prefix VMM -ErrorAction SilentlyContinue
 
     #Connect to VMM service
     Get-VMMSCVMMServer -ComputerName $VMMServerName | Out-Null
